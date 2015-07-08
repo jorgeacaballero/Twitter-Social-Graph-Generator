@@ -16,19 +16,22 @@ ActiveRecord::Base.establish_connection(
   #:database => ':memory:' #uncomment this if you are going to debug
 )
 
-ActiveRecord::Schema.define do
-    create_table :points do |t|
-      t.string :follower
-      t.string :followee
-    end
-end
-
 class Point < ActiveRecord::Base
 end
 
 fetch_twitter = false # before changing this to true, delete the existing db to regenerate a new one
 write_net = true
-primary_node = "jorge_caballero"
+run_migration = false
+primary_node = "Jorge_Caballero"
+
+if run_migration
+  ActiveRecord::Schema.define do
+    create_table :points do |t|
+      t.string :follower
+      t.string :followee
+    end
+  end
+end
 
 def twitter_client
   Twitter::REST::Client.new do |config|
@@ -142,13 +145,30 @@ if write_net
 	net = File.new("final.net", "w")
 
 	final = Point.uniq.pluck(:follower)
+  final_followees = Point.uniq.pluck(:followee)
+  final_followees.each { |p|
+    unless final.include? p
+      final.push(p)
+    end
+  }
+
 	count = 1
+  indices = Hash.new
 	net.puts "*Vertices #{final.count}"
 	final.each { |p|
-		net.puts "#{count} \"#{p.follower}\" 0.0 0.0 0.0"
+		net.puts "#{count} \"#{p}\" 0.0 0.0 0.0"
+    indices.store(count, p) 
 		count += 1
 	}
 	net.puts "*Arcs"
+
+  puts indices
+
+  Point.all.each { |p|
+    follower = indices.select{|key, hash| hash == p.follower}
+    followee = indices.select{|key, hash| hash == p.followee}
+    net.puts "#{follower.keys.join} #{followee.keys.join} 1.0"
+  }
 
 	#myfile.puts "\"#{running_count}\",\"#{f.name.gsub('"','\"')}\",\"#{f.screen_name}\""
 end
