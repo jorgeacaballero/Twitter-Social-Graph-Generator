@@ -124,6 +124,7 @@ if fetch_twitter
 		puts fetch_all_friends(p.follower)
 		puts fetch_all_followers(p.follower)
 		percent = (count.to_f/points.count)*100
+		percent = percent.round(2)
 		puts "#{count} out of #{points.count} processed this represents #{percent}%"
 		count += 1
 	}
